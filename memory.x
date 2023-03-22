@@ -26,10 +26,13 @@ MEMORY
    sources added the attribute `#[link_section = ".ram2bss"]` to the data
    you want to place there. */
 /* Note that the section will not be zero-initialized by the runtime! */
-/* SECTIONS {
-     .ram2bss (NOLOAD) : ALIGN(4) {
-       *(.ram2bss);
-       . = ALIGN(4);
-     } > RAM2
-   } INSERT AFTER .bss;
-*/
+SECTIONS {
+     .resource_table : ALIGN(4) {
+         *(.resource_table*)
+     } > DDR_MEM_REG
+
+     .log_shared_mem (NOLOAD) : ALIGN(4) {
+         *(.log_shared_mem*)
+     } > DDR_DMA_MEM_REG
+} INSERT AFTER .bss;
+
