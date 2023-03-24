@@ -2,6 +2,7 @@
 #![no_main]
 #![allow(dead_code)]
 
+
 // pick a panicking behavior
 use panic_halt as _; // you can put a breakpoint on `rust_begin_unwind` to catch panics
 // use panic_abort as _; // requires nightly
@@ -14,7 +15,7 @@ use cortex_m_rt::entry;
 /**
  * \brief Resource Table Header
  */
-struct RpmessageRscHdr {
+pub struct RpmessageRscHdr {
     // Version Number, set to 1
     ver: u32,
     // Number of Entries, MUST be 2
@@ -26,7 +27,7 @@ struct RpmessageRscHdr {
 /**
  * \brief Structure used for remoteproc trace
  */
-struct RpmessageRscTrace {
+pub struct RpmessageRscTrace {
     // Type of trace, MUST be set to TYPE_TRACE | TRACE_INTS_VER0
     trace_type: u32,
     // Device Address, physical address of location of trace buffer in remote side
@@ -36,13 +37,13 @@ struct RpmessageRscTrace {
     // Reserved for future use, set to 0
     reserved: u32,
     //  Name of the trace
-    name: [u32; 32],
+    name: [u8; 32],
 }
 
 /**
  * \brief Resource Table Device VRing Structure
  */
-struct RpmessageRscVring {
+pub struct RpmessageRscVring {
      // device address, physical address of VRING, 
      //   set to RPMSG_VRING_ADDR_ANY, updated by linux, with actual address  
      //
@@ -60,7 +61,7 @@ struct RpmessageRscVring {
 /**
  *  \brief VDEV structure
  */
-struct RpmessageRscVdev {
+pub struct RpmessageRscVdev {
     // type of VDEV, set to TYPE_VDEV
     vdev_type: u32,
     // ID of VDEV, set to VIRTIO_ID_RPMSG
@@ -84,7 +85,7 @@ struct RpmessageRscVdev {
 /**
  *  \brief IPC Resource Table used by IPC app
  */
-struct RpmessageResourceTable {
+pub struct RpmessageResourceTable {
     /**< Header Information */
     base: RpmessageRscHdr,
     /**< offset to VDEV and TRACE entries */
@@ -99,13 +100,47 @@ struct RpmessageResourceTable {
     trace: RpmessageRscTrace,
 }
 
-//const gRPMessage_linuxResourceTable : RpmessageResourceTable = {
-//    {
-//	ver: 1,
-//	num: 1,
-//	reserved: [0,0]
-//    },
-//}
+#[link_section = ".resource_table"]
+#[no_mangle] pub static G_RPMESSAGE_LINUX_RESOURCE_TABLE : RpmessageResourceTable = RpmessageResourceTable {
+	base: RpmessageRscHdr {
+		ver: 1,
+		num: 2,
+		reserved: [0, 0],
+	},
+	offset: [0, 0],
+	vdev: RpmessageRscVdev {
+		vdev_type: 3,
+		id: 7,
+		notifyid: 0,
+		dfeatures: 1,
+		gfeatures: 1,
+		config_len: 0,
+		status: 0,
+		num_of_vrings: 2,
+		reserved: [0, 0],
+	},
+	vring0: RpmessageRscVring {
+		da: 0xFFFFFFFF,
+		align: 4096,
+		num: 256,
+		notifyid: 1,
+		reserved: 0
+	},
+	vring1: RpmessageRscVring {
+		da: 0xFFFFFFFF,
+		align: 4096,
+		num: 256,
+		notifyid: 2,
+		reserved: 0
+	},
+	trace: RpmessageRscTrace {
+		trace_type: 2,
+		da: 0x0,
+		len: 0x0,
+		reserved: 0,
+		name: [b't', b'r', b'a', b'c', b'e', b':', 0, b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', ],
+	},
+};
 
 
 #[entry]
