@@ -2,7 +2,6 @@
 #![no_main]
 #![allow(dead_code)]
 
-
 // pick a panicking behavior
 use panic_halt as _; // you can put a breakpoint on `rust_begin_unwind` to catch panics
 // use panic_abort as _; // requires nightly
@@ -101,7 +100,10 @@ pub struct RpmessageResourceTable {
 }
 
 #[link_section = ".resource_table"]
-#[no_mangle] pub static G_RPMESSAGE_LINUX_RESOURCE_TABLE : RpmessageResourceTable = RpmessageResourceTable {
+#[no_mangle]
+#[used]
+#[export_name = ".resource_table.val"]
+pub static G_RPMESSAGE_LINUX_RESOURCE_TABLE : RpmessageResourceTable = RpmessageResourceTable {
 	base: RpmessageRscHdr {
 		ver: 1,
 		num: 2,
@@ -142,6 +144,11 @@ pub struct RpmessageResourceTable {
 	},
 };
 
+#[link_section = ".log_shared_mem"]
+#[no_mangle]
+#[used]
+#[export_name = ".log_shared_mem.val"]
+pub static log_message_buffer :[u8; 3] = [ b'O', b'K', 0];
 
 #[entry]
 fn main() -> ! {
