@@ -10,10 +10,12 @@ use panic_halt as _; // you can put a breakpoint on `rust_begin_unwind` to catch
 
 use cortex_m::asm;
 use cortex_m_rt::entry;
+use memoffset::offset_of;
 
 /**
  * \brief Resource Table Header
  */
+#[repr(C, packed)]
 pub struct RpmessageRscHdr {
     // Version Number, set to 1
     ver: u32,
@@ -26,6 +28,7 @@ pub struct RpmessageRscHdr {
 /**
  * \brief Structure used for remoteproc trace
  */
+#[repr(C, packed)]
 pub struct RpmessageRscTrace {
     // Type of trace, MUST be set to TYPE_TRACE | TRACE_INTS_VER0
     trace_type: u32,
@@ -42,24 +45,26 @@ pub struct RpmessageRscTrace {
 /**
  * \brief Resource Table Device VRing Structure
  */
+#[repr(C, packed)]
 pub struct RpmessageRscVring {
-     // device address, physical address of VRING, 
-     //   set to RPMSG_VRING_ADDR_ANY, updated by linux, with actual address  
-     //
-     da: u32,
+    // device address, physical address of VRING,
+    //   set to RPMSG_VRING_ADDR_ANY, updated by linux, with actual address
+    //
+    da: u32,
     // Alignment used between AVAIL and USED structures, updated by linux
-     align: u32,
+    align: u32,
     // Number of message buffers, MUST be 256
-     num: u32,
+    num: u32,
     // NotifyId for receive channel, set 1 for TX VRING and 2 for RX VRING
-     notifyid: u32,
+    notifyid: u32,
     // Reserved for future use, set to 0
-     reserved: u32,
+    reserved: u32,
 }
 
 /**
  *  \brief VDEV structure
  */
+#[repr(C, packed)]
 pub struct RpmessageRscVdev {
     // type of VDEV, set to TYPE_VDEV
     vdev_type: u32,
@@ -84,6 +89,7 @@ pub struct RpmessageRscVdev {
 /**
  *  \brief IPC Resource Table used by IPC app
  */
+#[repr(C, packed)]
 pub struct RpmessageResourceTable {
     /**< Header Information */
     base: RpmessageRscHdr,
@@ -103,52 +109,59 @@ pub struct RpmessageResourceTable {
 #[no_mangle]
 #[used]
 #[export_name = ".resource_table.val"]
-pub static G_RPMESSAGE_LINUX_RESOURCE_TABLE : RpmessageResourceTable = RpmessageResourceTable {
-	base: RpmessageRscHdr {
-		ver: 1,
-		num: 2,
-		reserved: [0, 0],
-	},
-	offset: [0, 0],
-	vdev: RpmessageRscVdev {
-		vdev_type: 3,
-		id: 7,
-		notifyid: 0,
-		dfeatures: 1,
-		gfeatures: 1,
-		config_len: 0,
-		status: 0,
-		num_of_vrings: 2,
-		reserved: [0, 0],
-	},
-	vring0: RpmessageRscVring {
-		da: 0xFFFFFFFF,
-		align: 4096,
-		num: 256,
-		notifyid: 1,
-		reserved: 0
-	},
-	vring1: RpmessageRscVring {
-		da: 0xFFFFFFFF,
-		align: 4096,
-		num: 256,
-		notifyid: 2,
-		reserved: 0
-	},
-	trace: RpmessageRscTrace {
-		trace_type: 2,
-		da: 0x0,
-		len: 0x0,
-		reserved: 0,
-		name: [b't', b'r', b'a', b'c', b'e', b':', 0, b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', ],
-	},
+pub static G_RPMESSAGE_LINUX_RESOURCE_TABLE: RpmessageResourceTable = RpmessageResourceTable {
+    base: RpmessageRscHdr {
+        ver: 1,
+        num: 2,
+        reserved: [0, 0],
+    },
+    offset: [
+        offset_of!(RpmessageResourceTable, vdev) as u32,
+        offset_of!(RpmessageResourceTable, trace) as u32,
+    ],
+    vdev: RpmessageRscVdev {
+        vdev_type: 3,
+        id: 7,
+        notifyid: 0,
+        dfeatures: 1,
+        gfeatures: 1,
+        config_len: 0,
+        status: 0,
+        num_of_vrings: 2,
+        reserved: [0, 0],
+    },
+    vring0: RpmessageRscVring {
+        da: 0xFFFFFFFF,
+        align: 4096,
+        num: 256,
+        notifyid: 1,
+        reserved: 0,
+    },
+    vring1: RpmessageRscVring {
+        da: 0xFFFFFFFF,
+        align: 4096,
+        num: 256,
+        notifyid: 2,
+        reserved: 0,
+    },
+    trace: RpmessageRscTrace {
+        trace_type: 2,
+        da: 0x0,
+        len: 0x0,
+        reserved: 0,
+        name: [
+            b't', b'r', b'a', b'c', b'e', b':', 0, b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+            b' ', b' ', b' ',
+        ],
+    },
 };
 
 #[link_section = ".log_shared_mem"]
 #[no_mangle]
 #[used]
 #[export_name = ".log_shared_mem.val"]
-pub static log_message_buffer :[u8; 3] = [ b'O', b'K', 0];
+pub static log_message_buffer: [u8; 3] = [b'O', b'K', 0];
 
 #[entry]
 fn main() -> ! {
